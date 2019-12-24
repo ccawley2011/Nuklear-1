@@ -3,19 +3,85 @@ name: C/C++ CI
 on: [push, pull_request]
 
 jobs:
-  build:
+  build-allegro5:
 
     runs-on: ubuntu-latest
-    
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: apt-update
+      run: sudo apt-get update -qq
+    - name: apt get allegro5
+      run: sudo apt-get install -y --no-install-recommends liballegro5-dev liballegro-image5-dev liballegro-ttf5-dev
+    - name: build demo/allegro5
+      run: make -C demo/allegro5
+
+  build-glfw3:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: apt-update
+      run: sudo apt-get update -qq
+    - name: apt get glfw3
+      run: sudo apt-get install -y --no-install-recommends libglfw3-dev libglew-dev
+    - name: build demo/glfw_opengl2
+      run: make -C demo/glfw_opengl2
+    - name: build demo/glfw_opengl3
+      run: make -C demo/glfw_opengl3
+    - name: build demo/glfw_opengl4
+      run: make -C demo/glfw_opengl4
+    - name: build example
+      run: make -C example
+
+  build-sdl2:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: apt-update
+      run: sudo apt-get update -qq
+    - name: apt get sdl2
+      run: sudo apt-get install -y --no-install-recommends libsdl2-dev libglew-dev
+    - name: build demo/sdl_opengl2
+      run: make -C demo/sdl_opengl2
+    - name: build demo/sdl_opengl3
+      run: make -C demo/sdl_opengl3
+    - name: build demo/sdl_opengles2
+      run: make -C demo/sdl_opengles2
+
+  build-wayland:
+
+    runs-on: ubuntu-latest
+
     steps:
     - uses: actions/checkout@v1
     - name: apt-update
       run: sudo apt-get update -qq
     - name: apt get glfw
-      run: sudo apt-get install -y --no-install-recommends libglfw3 libglfw3-dev libglew-dev
-    - name: build opengl2
-      run: make -C demo/glfw_opengl2
-    - name: build opengl3
-      run: make -C demo/glfw_opengl3
-    - name: build example
-      run: make -C example
+      run: sudo apt-get install -y --no-install-recommends libwayland-dev
+    - name: build demo/wayland_rawfb
+      run: make -C demo/wayland_rawfb
+
+  build-x11:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: apt-update
+      run: sudo apt-get update -qq
+    - name: apt get glfw
+      run: sudo apt-get install -y --no-install-recommends libx11-dev libxext-dev libxft-dev libglu1-mesa-dev
+    - name: build demo/x11
+      run: make -C demo/x11
+    - name: build demo/x11_opengl2
+      run: make -C demo/x11_opengl2
+    - name: build demo/x11_opengl3
+      run: make -C demo/x11_opengl3
+    - name: build demo/x11_rawfb
+      run: make -C demo/x11_rawfb
+    - name: build demo/x11_xft
+      run: make -C demo/x11_xft
