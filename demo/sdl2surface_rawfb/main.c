@@ -23,7 +23,7 @@
 #define NK_SDLSURFACE_IMPLEMENTATION
 #include "sdl2surface_rawfb.h"
 
-static int translate_sdl_key(struct SDL_Keysym const *k)
+static int translate_sdl_key(SDL_KeyboardEvent *k)
 {
     /*keyboard handling left as an exercise for the reader */
 
@@ -97,6 +97,7 @@ int main(int argc, char **argv)
     SDL_Init(SDL_INIT_VIDEO);
     printf("sdl init called...\n");
 
+#if SDL_VERSION_ATLEAST(2, 0, 0)
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
 
     SDL_DisplayMode dm;
@@ -114,10 +115,32 @@ int main(int argc, char **argv)
     }
 
 
+#ifdef SDL2_WINDOW_SURFACE
+    SDL_Surface *surface = SDL_GetWindowSurface(window);
+#else
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
 
     SDL_Surface *surface = SDL_CreateRGBSurfaceWithFormat(0, dm.w-200, dm.h-200, 32, SDL_PIXELFORMAT_ARGB8888);
+#endif
 
+#else
+    int window_width = 800, window_height = 600;
+
+    const SDL_VideoInfo *videoInfo = SDL_GetVideoInfo();
+    if (videoInfo->current_w > 0 && videoInfo->current_h > 0) {
+        window_width = videoInfo->current_w - 200;
+        window_height = videoInfo->current_h - 200;
+    }
+
+    SDL_Surface *surface = SDL_SetVideoMode(window_width, window_height, 0, SDL_ANYFORMAT);
+    if (!surface)
+    {
+        printf("can't open window!\n");
+        exit(1);
+    }
+
+    SDL_WM_SetCaption("Puzzle", NULL);
+#endif
 
     struct sdlsurface_context *context = nk_sdlsurface_init(surface, 13.0f);
 
@@ -134,10 +157,10 @@ int main(int argc, char **argv)
                     exit(0);
                 break;
                 case SDL_KEYDOWN:
-                    nk_input_key(&(context->ctx), translate_sdl_key(&event.key.keysym), 1);
+                    nk_input_key(&(context->ctx), translate_sdl_key(&event.key), 1);
                 break;
                 case SDL_KEYUP:
-                    nk_input_key(&(context->ctx), translate_sdl_key(&event.key.keysym), 0);
+                    nk_input_key(&(context->ctx), translate_sdl_key(&event.key), 0);
                 break;
                 case SDL_MOUSEMOTION:
                     nk_input_motion(&(context->ctx), event.motion.x, event.motion.y);
@@ -148,12 +171,14 @@ int main(int argc, char **argv)
                 case SDL_MOUSEBUTTONUP:
                     nk_input_button(&(context->ctx), sdl_button_to_nk(event.button.button), event.button.x, event.button.y,0);
                 break;
+#if SDL_VERSION_ATLEAST(2, 0, 0)
                 case SDL_MOUSEWHEEL:
                     vec.x = event.wheel.x;
                     vec.y = event.wheel.y;
                     nk_input_scroll(&(context->ctx), vec );
 
                 break;
+#endif
             }
         }
         nk_input_end(&(context->ctx));
@@ -184,18 +209,31 @@ int main(int argc, char **argv)
 
 
 
+#if !SDL_VERSION_ATLEAST(2, 0, 0)
+        SDL_Flip(surface);
+#elif defined(SDL2_WINDOW_SURFACE)
+        SDL_UpdateWindowSurface(window);
+#else
         SDL_Texture *tex = SDL_CreateTextureFromSurface(renderer, surface);
         SDL_RenderCopy(renderer, tex, NULL, NULL);
         SDL_RenderPresent(renderer);
         SDL_DestroyTexture(tex);
-
+#endif
     }
 
     nk_sdlsurface_shutdown(context);
 
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+#ifndef SDL2_WINDOW_SURFACE
     SDL_FreeSurface(surface);
     SDL_DestroyRenderer(renderer);
+#endif
     SDL_DestroyWindow(window);
+#endif
+
+    SDL_Quit();
+
+    return 0;
 }
 
 
